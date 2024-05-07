@@ -1,0 +1,23 @@
+{
+  "cSpell.words": ["Bombasto", "Celeritas", "Dynama", "Magneta"],
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#690217",
+    "activityBar.background": "#690217",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#1b7d02",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#690217",
+    "statusBar.background": "#37010c",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#690217",
+    "statusBarItem.remoteBackground": "#37010c",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#37010c",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#37010c99",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#37010c"
+}

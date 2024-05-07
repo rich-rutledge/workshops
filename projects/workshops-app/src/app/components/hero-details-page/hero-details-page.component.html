@@ -1,0 +1,42 @@
+@if (hero) {
+<h3>Hero Details</h3>
+<h2>{{ hero.name }}</h2>
+<img
+  class="hero-image"
+  [alt]="'Image for ' + hero.name"
+  [src]="hero.imageUrl"
+/>
+<div>id: {{ hero.id }}</div>
+<div class="labeled-input-container">
+  <label for="hero-name">Hero name: </label>
+  <input
+    class="text-display"
+    id="hero-name"
+    placeholder="Hero name"
+    type="text"
+    [(ngModel)]="hero.name"
+  />
+</div>
+<div class="labeled-input-container labeled-text-area-container">
+  <label for="hero-description">Hero description: </label>
+  <textarea
+    class="text-display text-area"
+    id="hero-description"
+    type="text"
+    [(ngModel)]="hero.description"
+    placeholder="<Empty>"
+  ></textarea>
+</div>
+<div class="labeled-input-container">
+  <label for="hero-image">Hero image URL: </label>
+  <input
+    class="text-display"
+    id="hero-image"
+    placeholder="Hero image url"
+    type="text"
+    [(ngModel)]="hero.imageUrl"
+  />
+</div>
+<button type="button" (click)="goBackClicked()">go back</button>
+<button type="button" (click)="saveClicked()">save</button>
+}

@@ -1,0 +1,11 @@
+<label for="search-input">Hero Search</label>
+<input id="search-input" type="text" [(ngModel)]="searchTerm" />
+<ul class="search-result">
+  @for (hero of heroSearchResults; track $index) {
+  <li>
+    <a routerLink="/detail/{{ hero.id }}">
+      {{ hero.name }}
+    </a>
+  </li>
+  }
+</ul>

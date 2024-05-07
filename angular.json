@@ -1,0 +1,105 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "version": 1,
+  "newProjectRoot": "projects",
+  "projects": {
+    "workshops-app": {
+      "projectType": "application",
+      "schematics": {
+        "@schematics/angular:component": {
+          "style": "scss"
+        }
+      },
+      "root": "projects/workshops-app",
+      "sourceRoot": "projects/workshops-app/src",
+      "prefix": "app",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-angular:application",
+          "options": {
+            "outputPath": "dist/workshops-app",
+            "index": "projects/workshops-app/src/index.html",
+            "browser": "projects/workshops-app/src/main.ts",
+            "polyfills": ["zone.js"],
+            "tsConfig": "projects/workshops-app/tsconfig.app.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              "projects/workshops-app/src/favicon.ico",
+              "projects/workshops-app/src/assets"
+            ],
+            "styles": ["projects/workshops-app/src/styles.scss"],
+            "scripts": []
+          },
+          "configurations": {
+            "production": {
+              "budgets": [
+                {
+                  "type": "initial",
+                  "maximumWarning": "500kb",
+                  "maximumError": "1mb"
+                },
+                {
+                  "type": "anyComponentStyle",
+                  "maximumWarning": "2kb",
+                  "maximumError": "4kb"
+                }
+              ],
+              "outputHashing": "all"
+            },
+            "development": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true
+            }
+          },
+          "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "buildTarget": "workshops-app:build:production"
+            },
+            "development": {
+              "buildTarget": "workshops-app:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
+        },
+        "extract-i18n": {
+          "builder": "@angular-devkit/build-angular:extract-i18n",
+          "options": {
+            "buildTarget": "workshops-app:build"
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "polyfills": ["zone.js", "zone.js/testing"],
+            "tsConfig": "projects/workshops-app/tsconfig.spec.json",
+            "inlineStyleLanguage": "scss",
+            "assets": [
+              "projects/workshops-app/src/favicon.ico",
+              "projects/workshops-app/src/assets"
+            ],
+            "styles": ["projects/workshops-app/src/styles.scss"],
+            "scripts": []
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": [
+              "projects/workshops-app/**/*.ts",
+              "projects/workshops-app/**/*.html"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "cli": {
+    "schematicCollections": ["@angular-eslint/schematics"],
+    "analytics": false
+  }
+}
