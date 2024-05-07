@@ -1,0 +1,22 @@
+h1 {
+  margin-bottom: 0;
+}
+
+nav a {
+  background-color: #e8e8e8;
+  border-radius: 4px;
+  color: #3d3d3d;
+  display: inline-block;
+  margin-top: 10px;
+  padding: 1rem;
+  text-decoration: none;
+
+  &:hover {
+    background-color: #42545c;
+    color: white;
+  }
+
+  &.active {
+    background-color: black;
+  }
+}
