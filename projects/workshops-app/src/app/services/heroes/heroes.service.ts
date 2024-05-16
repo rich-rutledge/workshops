@@ -1,11 +1,18 @@
 import { AddHeroModel, HeroModel } from './hero.model';
 import {
+  BehaviorSubject,
+  Observable,
+  catchError,
+  combineLatest,
+  of,
+  switchMap,
+  tap,
+} from 'rxjs';
+import {
   HttpClient,
   HttpErrorResponse,
   HttpHeaders,
 } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
 
 import { HeroSearchResultsModel } from './hero-search-results.model';
 import { Injectable } from '@angular/core';
@@ -14,17 +21,79 @@ import { heroSearchResultsPageSizeOptions } from './hero-search-results-page-siz
 
 @Injectable({ providedIn: 'root' })
 export class HeroesService {
+  public readonly pageSize$: Observable<number>;
+  public readonly pageNumber$: Observable<number>;
+  public readonly searchResults$: Observable<HeroSearchResultsModel>;
+  public readonly searchTerm$: Observable<string>;
   public readonly validPageSizes: readonly number[] =
     heroSearchResultsPageSizeOptions;
   private readonly heroesUrl: string = 'http://localhost:5000/api/heroes';
   private readonly httpOptions: { headers: HttpHeaders } = {
     headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
   };
+  private readonly pageSizeBS: BehaviorSubject<number> = new BehaviorSubject(
+    this.validPageSizes[0]
+  );
+  private readonly pageNumberBS: BehaviorSubject<number> = new BehaviorSubject(
+    0
+  );
+  private readonly searchTermBS: BehaviorSubject<string> = new BehaviorSubject(
+    'iron'
+  );
 
   public constructor(
     private readonly httpClient: HttpClient,
     private readonly messageService: MessageService
-  ) {}
+  ) {
+    this.pageSize$ = this.pageSizeBS.asObservable();
+    this.pageNumber$ = this.pageNumberBS.asObservable();
+    this.searchTerm$ = this.searchTermBS.asObservable();
+
+    this.searchResults$ = combineLatest({
+      pageSize: this.pageSize$,
+      pageNumber: this.pageNumber$,
+      searchTerm: this.searchTerm$,
+    }).pipe(
+      switchMap(
+        ({
+          pageSize,
+          pageNumber,
+          searchTerm,
+        }: {
+          pageSize: number;
+          pageNumber: number;
+          searchTerm: string;
+        }): Observable<HeroSearchResultsModel> =>
+          !searchTerm
+            ? of({ heroes: [], totalResultCount: 0 })
+            : this.httpClient
+                .get<HeroSearchResultsModel>(this.heroesUrl, {
+                  params: {
+                    searchTerm,
+                    pageSize,
+                    pageNumber,
+                  },
+                })
+                .pipe(
+                  tap({
+                    next: (searchResults: HeroSearchResultsModel): void =>
+                      this.log(
+                        `found ${searchResults.totalResultCount} heroes matching "${searchTerm}"`
+                      ),
+                  }),
+                  catchError(
+                    (
+                      error: HttpErrorResponse
+                    ): Observable<HeroSearchResultsModel> =>
+                      this.handleErrorWithDefault(error, 'searchHeroes', {
+                        heroes: [],
+                        totalResultCount: 0,
+                      })
+                  )
+                )
+      )
+    );
+  }
 
   public readonly getTopHeroes = (count: number): Observable<HeroModel[]> =>
     this.httpClient
@@ -59,37 +128,6 @@ export class HeroesService {
           this.handleError(error, `getHero id=${id}`)
       )
     );
-
-  public readonly searchHeroes = (
-    searchTerm: string,
-    pageSize: number,
-    pageNumber: number
-  ): Observable<HeroSearchResultsModel> =>
-    !searchTerm.trim()
-      ? of({ heroes: [], totalResultCount: 0 })
-      : this.httpClient
-          .get<HeroSearchResultsModel>(this.heroesUrl, {
-            params: {
-              searchTerm,
-              pageSize,
-              pageNumber,
-            },
-          })
-          .pipe(
-            tap({
-              next: (searchResults: HeroSearchResultsModel): void =>
-                this.log(
-                  `found ${searchResults.totalResultCount} heroes matching "${searchTerm}"`
-                ),
-            }),
-            catchError(
-              (error: HttpErrorResponse): Observable<HeroSearchResultsModel> =>
-                this.handleErrorWithDefault(error, 'searchHeroes', {
-                  heroes: [],
-                  totalResultCount: 0,
-                })
-            )
-          );
 
   public readonly addHero = (
     hero: AddHeroModel

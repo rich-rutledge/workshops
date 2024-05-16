@@ -1,10 +1,12 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
+
 import { FormsModule } from '@angular/forms';
 import { HeroModel } from '../../services/heroes/hero.model';
 import { HeroSearchResultsModel } from '../../services/heroes/hero-search-results.model';
 import { HeroesService } from '../../services/heroes/heroes.service';
 import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-heroes-page',
@@ -13,7 +15,7 @@ import { RouterLink } from '@angular/router';
   templateUrl: './heroes-page.component.html',
   styleUrl: './heroes-page.component.scss',
 })
-export class HeroesPageComponent {
+export class HeroesPageComponent implements OnDestroy {
   // Should something outside of this class, including the template, be able
   // to change these fields???
   public searchResults: HeroModel[] = [];
@@ -24,7 +26,7 @@ export class HeroesPageComponent {
   }
   public set pageNumber(value: number) {
     this._pageNumber = value;
-    this.searchHeroes();
+    // this.searchHeroes();
   }
 
   public get pageSize(): number {
@@ -33,7 +35,7 @@ export class HeroesPageComponent {
   public set pageSize(value: number) {
     this._pageSize = value;
     this._pageNumber = 0;
-    this.searchHeroes();
+    // this.searchHeroes();
   }
 
   public get searchTerm(): string {
@@ -42,14 +44,28 @@ export class HeroesPageComponent {
   public set searchTerm(value: string) {
     this._searchTerm = value;
     this._pageNumber = 0;
-    this.searchHeroes();
+    // this.searchHeroes();
   }
 
   private _pageNumber: number = 0;
   private _pageSize: number = 10;
   private _searchTerm: string = '';
+  private readonly subscriptions: Subscription = new Subscription();
 
-  public constructor(public readonly heroesService: HeroesService) {}
+  public constructor(public readonly heroesService: HeroesService) {
+    this.subscriptions.add(
+      this.heroesService.searchResults$.subscribe({
+        next: (result: HeroSearchResultsModel): void => {
+          this.searchResults = result.heroes ?? [];
+          this.pageCount = Math.ceil(result.totalResultCount / this.pageSize);
+        },
+      })
+    );
+  }
+
+  public ngOnDestroy(): void {
+    this.subscriptions.unsubscribe();
+  }
 
   public readonly addButtonClicked = (
     name: string,
@@ -62,9 +78,7 @@ export class HeroesPageComponent {
       this.heroesService
         .addHero({ name, description, imageUrl, views: 0 })
         .subscribe({
-          next: (): void => {
-            this.searchHeroes();
-          },
+          next: (): void => {},
         });
     }
   };
@@ -84,20 +98,7 @@ export class HeroesPageComponent {
     event.stopPropagation();
 
     this.heroesService.deleteHero(hero.id).subscribe({
-      next: (): void => {
-        this.searchHeroes();
-      },
+      next: (): void => {},
     });
-  };
-
-  private readonly searchHeroes = (): void => {
-    this.heroesService
-      .searchHeroes(this.searchTerm, this.pageSize, this.pageNumber)
-      .subscribe({
-        next: (result: HeroSearchResultsModel): void => {
-          this.searchResults = result.heroes ?? [];
-          this.pageCount = Math.ceil(result.totalResultCount / this.pageSize);
-        },
-      });
   };
 }
