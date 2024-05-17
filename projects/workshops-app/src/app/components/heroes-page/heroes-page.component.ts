@@ -1,17 +1,17 @@
+import { AsyncPipe, NgClass } from '@angular/common';
 import { Component, OnDestroy } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 import { HeroModel } from '../../services/heroes/hero.model';
 import { HeroSearchResultsModel } from '../../services/heroes/hero-search-results.model';
 import { HeroesService } from '../../services/heroes/heroes.service';
-import { NgClass } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-heroes-page',
   standalone: true,
-  imports: [NgClass, RouterLink, FormsModule],
+  imports: [AsyncPipe, NgClass, RouterLink, FormsModule],
   templateUrl: './heroes-page.component.html',
   styleUrl: './heroes-page.component.scss',
 })
@@ -19,48 +19,15 @@ export class HeroesPageComponent implements OnDestroy {
   // Should something outside of this class, including the template, be able
   // to change these fields???
   public searchResults: HeroModel[] = [];
-  public pageCount: number = 0;
 
-  public get pageNumber(): number {
-    return this._pageNumber;
-  }
-  public set pageNumber(value: number) {
-    this._pageNumber = value;
-    // this.searchHeroes();
-  }
-
-  public get pageSize(): number {
-    return this._pageSize;
-  }
-  public set pageSize(value: number) {
-    this._pageSize = value;
-    this._pageNumber = 0;
-    // this.searchHeroes();
-  }
-
-  public get searchTerm(): string {
-    return this._searchTerm;
-  }
-  public set searchTerm(value: string) {
-    this._searchTerm = value;
-    this._pageNumber = 0;
-    // this.searchHeroes();
-  }
-
-  private _pageNumber: number = 0;
-  private _pageSize: number = 10;
-  private _searchTerm: string = '';
   private readonly subscriptions: Subscription = new Subscription();
 
   public constructor(public readonly heroesService: HeroesService) {
-    this.subscriptions.add(
-      this.heroesService.searchResults$.subscribe({
-        next: (result: HeroSearchResultsModel): void => {
-          this.searchResults = result.heroes ?? [];
-          this.pageCount = Math.ceil(result.totalResultCount / this.pageSize);
-        },
-      })
-    );
+    this.heroesService.searchResults$.subscribe({
+      next: (result: HeroSearchResultsModel): void => {
+        this.searchResults = result.heroes ?? [];
+      },
+    });
   }
 
   public ngOnDestroy(): void {
@@ -81,13 +48,6 @@ export class HeroesPageComponent implements OnDestroy {
           next: (): void => {},
         });
     }
-  };
-
-  public readonly movePageNumber = (pages: number): void => {
-    this.pageNumber = Math.min(
-      Math.max(this.pageNumber + pages, 0),
-      this.pageCount - 1
-    );
   };
 
   public readonly deleteButtonClicked = (

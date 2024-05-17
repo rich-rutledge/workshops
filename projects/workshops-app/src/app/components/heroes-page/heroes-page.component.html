@@ -42,7 +42,8 @@
     class="control-group-input"
     id="hero-search"
     type="text"
-    [(ngModel)]="searchTerm"
+    [ngModel]="heroesService.searchTerm$ | async"
+    (ngModelChange)="heroesService.setSearchTerm($event)"
   />
 </div>
 @if (searchResults && searchResults.length) {
@@ -51,17 +52,20 @@
     Heroes per Page: @for (currentPageSize of heroesService.validPageSizes;
     track $index) {
     <button
-      [ngClass]="{ selected: pageSize === currentPageSize }"
-      (click)="pageSize = currentPageSize"
+      [ngClass]="{
+        selected: (heroesService.pageSize$ | async) === currentPageSize
+      }"
+      (click)="heroesService.setPageSize(currentPageSize)"
     >
       {{ currentPageSize }}
     </button>
     }
   </div>
   <div class="page-button-group">
-    <button (click)="movePageNumber(-1)"><</button>
-    Page {{ pageNumber + 1 }} of {{ pageCount }}
-    <button (click)="movePageNumber(+1)">></button>
+    <button (click)="heroesService.movePageNumber(-1)"><</button>
+    Page {{ ((heroesService.pageNumber$ | async) || 0) + 1 }} of
+    {{ heroesService.pageCount$ | async }}
+    <button (click)="heroesService.movePageNumber(1)">></button>
   </div>
 </div>
 }

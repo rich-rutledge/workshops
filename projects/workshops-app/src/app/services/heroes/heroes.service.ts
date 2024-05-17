@@ -4,7 +4,9 @@ import {
   Observable,
   catchError,
   combineLatest,
+  map,
   of,
+  shareReplay,
   switchMap,
   tap,
 } from 'rxjs';
@@ -21,6 +23,7 @@ import { heroSearchResultsPageSizeOptions } from './hero-search-results-page-siz
 
 @Injectable({ providedIn: 'root' })
 export class HeroesService {
+  public readonly pageCount$: Observable<number>;
   public readonly pageSize$: Observable<number>;
   public readonly pageNumber$: Observable<number>;
   public readonly searchResults$: Observable<HeroSearchResultsModel>;
@@ -38,7 +41,7 @@ export class HeroesService {
     0
   );
   private readonly searchTermBS: BehaviorSubject<string> = new BehaviorSubject(
-    'iron'
+    ''
   );
 
   public constructor(
@@ -91,9 +94,35 @@ export class HeroesService {
                       })
                   )
                 )
-      )
+      ),
+      shareReplay(1)
+    );
+
+    this.pageCount$ = combineLatest({
+      searchResults: this.searchResults$,
+      pageSize: this.pageSize$,
+    }).pipe(
+      map(
+        ({
+          searchResults,
+          pageSize,
+        }: {
+          searchResults: HeroSearchResultsModel;
+          pageSize: number;
+        }): number => Math.ceil(searchResults.totalResultCount / pageSize)
+      ),
+      shareReplay(1)
     );
   }
+
+  public readonly setSearchTerm = (searchTerm: string): void =>
+    this.searchTermBS.next(searchTerm);
+
+  public readonly setPageSize = (pageSize: number): void =>
+    this.pageSizeBS.next(pageSize);
+
+  public readonly movePageNumber = (pages: number): void =>
+    this.pageNumberBS.next(this.pageNumberBS.value + pages);
 
   public readonly getTopHeroes = (count: number): Observable<HeroModel[]> =>
     this.httpClient
@@ -105,7 +134,8 @@ export class HeroesService {
         catchError(
           (error: HttpErrorResponse): Observable<HeroModel[]> =>
             this.handleErrorWithDefault(error, 'getTopHeroes', [])
-        )
+        ),
+        shareReplay(1)
       );
 
   public readonly resetTopHeroes = (count: number): Observable<HeroModel[]> =>
@@ -117,7 +147,8 @@ export class HeroesService {
         catchError(
           (error: HttpErrorResponse): Observable<HeroModel[]> =>
             this.handleErrorWithDefault(error, `resetTopHeroes`, [])
-        )
+        ),
+        shareReplay(1)
       );
 
   public readonly getHero = (id: number): Observable<HeroModel | undefined> =>
@@ -126,7 +157,8 @@ export class HeroesService {
       catchError(
         (error: HttpErrorResponse): Observable<undefined> =>
           this.handleError(error, `getHero id=${id}`)
-      )
+      ),
+      shareReplay(1)
     );
 
   public readonly addHero = (
@@ -142,7 +174,8 @@ export class HeroesService {
         catchError(
           (error: HttpErrorResponse): Observable<undefined> =>
             this.handleError(error, 'addHero')
-        )
+        ),
+        shareReplay(1)
       );
 
   public readonly deleteHero = (id: number): Observable<undefined> =>
@@ -153,7 +186,8 @@ export class HeroesService {
         catchError(
           (error: HttpErrorResponse): Observable<undefined> =>
             this.handleError(error, 'deleteHero')
-        )
+        ),
+        shareReplay(1)
       );
 
   public readonly updateHero = (
@@ -164,7 +198,8 @@ export class HeroesService {
       catchError(
         (error: HttpErrorResponse): Observable<undefined> =>
           this.handleError(error, 'updateHero')
-      )
+      ),
+      shareReplay(1)
     );
 
   private readonly handleError = (
