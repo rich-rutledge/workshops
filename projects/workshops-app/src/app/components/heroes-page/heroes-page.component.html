@@ -46,7 +46,7 @@
     (ngModelChange)="heroesService.setSearchTerm($event)"
   />
 </div>
-@if (searchResults && searchResults.length) {
+@if ((heroesService.searchResults$ | async)?.totalResultCount || 0) {
 <div class="paging-container">
   <div class="toggle-button-group">
     Heroes per Page: @for (currentPageSize of heroesService.validPageSizes;
@@ -62,15 +62,26 @@
     }
   </div>
   <div class="page-button-group">
-    <button (click)="heroesService.movePageNumber(-1)"><</button>
+    <button
+      [disabled]="disablePreviousPageButton$ | async"
+      (click)="heroesService.movePageNumber(-1)"
+    >
+      <
+    </button>
     Page {{ ((heroesService.pageNumber$ | async) || 0) + 1 }} of
     {{ heroesService.pageCount$ | async }}
-    <button (click)="heroesService.movePageNumber(1)">></button>
+    <button
+      [disabled]="disableNextPageButton$ | async"
+      (click)="heroesService.movePageNumber(1)"
+    >
+      >
+    </button>
   </div>
 </div>
 }
 <div class="heroes-container">
-  @for (hero of searchResults; track $index) {
+  @for (hero of ((heroesService.searchResults$ | async)?.heroes || []); track
+  $index) {
   <div class="hero-detail">
     <a routerLink="/detail/{{ hero.id }}">
       <div class="badge">{{ hero.id }}</div>
