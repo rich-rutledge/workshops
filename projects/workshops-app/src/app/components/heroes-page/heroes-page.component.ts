@@ -1,4 +1,4 @@
-import { AsyncPipe, NgClass } from '@angular/common';
+import { AsyncPipe, NgClass, NgIf } from '@angular/common';
 import { Observable, combineLatest, map, shareReplay } from 'rxjs';
 
 import { Component } from '@angular/core';
@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
 @Component({
   selector: 'app-heroes-page',
   standalone: true,
-  imports: [AsyncPipe, NgClass, RouterLink, FormsModule],
+  imports: [AsyncPipe, NgClass, NgIf, RouterLink, FormsModule],
   templateUrl: './heroes-page.component.html',
   styleUrl: './heroes-page.component.scss',
 })
@@ -23,6 +23,7 @@ export class HeroesPageComponent {
       map((pageNumber: number): boolean => pageNumber === 0),
       shareReplay(1)
     );
+
     this.disableNextPageButton$ = combineLatest({
       pageCount: this.heroesService.pageCount$,
       pageNumber: this.heroesService.pageNumber$,
