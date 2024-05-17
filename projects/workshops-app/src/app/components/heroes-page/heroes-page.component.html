@@ -1,124 +1,103 @@
-<!-- @if({ searchTerm: heroesService.searchTerm$ | async, pageSize:
-heroesService.pageSize$ | async, pageCount: heroesService.pageCount$ | async,
-pageNumber: heroesService.pageNumber$ | async, searchResults:
-heroesService.searchResults$ | async, disablePreviousPageButton:
-disablePreviousPageButton$ | async, disableNextPageButton:
-disableNextPageButton$ | async}; as viewModel) { -->
-<ng-container
-  *ngIf="{
-    searchTerm: heroesService.searchTerm$ | async,
-    pageSize: heroesService.pageSize$ | async,
-    pageCount: heroesService.pageCount$ | async,
-    pageNumber: heroesService.pageNumber$ | async,
-    searchResults: heroesService.searchResults$ | async,
-    disablePreviousPageButton: disablePreviousPageButton$ | async,
-    disableNextPageButton: disableNextPageButton$ | async
-  } as viewModel"
+@if(viewModel$ | async; as viewModel) {
+<h2>My Heroes</h2>
+<h3>Add Hero</h3>
+<div class="control-group">
+  <label for="new-hero">Hero name: </label>
+  <input #heroName class="control-group-input" id="new-hero" type="text" />
+</div>
+<div class="control-group">
+  <label for="hero-description">Hero description: </label>
+  <textarea
+    #heroDescription
+    class="control-group-input"
+    id="hero-description"
+    type="text"
+  ></textarea>
+</div>
+<div class="control-group">
+  <label for="hero-image-url">Image url: </label>
+  <input
+    #heroImageUrl
+    class="control-group-input"
+    id="hero-image-url"
+    type="text"
+  />
+</div>
+<button
+  type="button"
+  class="add-button"
+  (click)="
+    addButtonClicked(heroName.value, heroDescription.value, heroImageUrl.value);
+    heroName.value = '';
+    heroDescription.value = '';
+    heroImageUrl.value = ''
+  "
 >
-  <h2>My Heroes</h2>
-  <h3>Add Hero</h3>
-  <div class="control-group">
-    <label for="new-hero">Hero name: </label>
-    <input #heroName class="control-group-input" id="new-hero" type="text" />
-  </div>
-  <div class="control-group">
-    <label for="hero-description">Hero description: </label>
-    <textarea
-      #heroDescription
-      class="control-group-input"
-      id="hero-description"
-      type="text"
-    ></textarea>
-  </div>
-  <div class="control-group">
-    <label for="hero-image-url">Image url: </label>
-    <input
-      #heroImageUrl
-      class="control-group-input"
-      id="hero-image-url"
-      type="text"
-    />
-  </div>
-  <button
-    type="button"
-    class="add-button"
-    (click)="
-      addButtonClicked(
-        heroName.value,
-        heroDescription.value,
-        heroImageUrl.value
-      );
-      heroName.value = '';
-      heroDescription.value = '';
-      heroImageUrl.value = ''
-    "
-  >
-    Add hero
-  </button>
-  <hr />
-  <h3>Hero Search</h3>
-  <div class="control-group">
-    <label for="hero-search">Hero name: </label>
-    <input
-      class="control-group-input"
-      id="hero-search"
-      type="text"
-      [ngModel]="viewModel.searchTerm"
-      (ngModelChange)="heroesService.setSearchTerm($event)"
-    />
-  </div>
-  @if (viewModel.searchResults?.totalResultCount || 0) {
-  <div class="paging-container">
-    <div class="toggle-button-group">
-      Heroes per Page: @for (currentPageSize of heroesService.validPageSizes;
-      track $index) {
-      <button
-        [ngClass]="{
-          selected: viewModel.pageSize === currentPageSize
-        }"
-        (click)="heroesService.setPageSize(currentPageSize)"
-      >
-        {{ currentPageSize }}
-      </button>
-      }
-    </div>
-    <div class="page-button-group">
-      <button
-        [disabled]="viewModel.disablePreviousPageButton"
-        (click)="heroesService.movePageNumber(-1)"
-      >
-        <
-      </button>
-      Page {{ (viewModel.pageNumber || 0) + 1 }} of
-      {{ viewModel.pageCount }}
-      <button
-        [disabled]="viewModel.disableNextPageButton"
-        (click)="heroesService.movePageNumber(1)"
-      >
-        >
-      </button>
-    </div>
-  </div>
-  }
-  <div class="heroes-container">
-    @for (hero of (viewModel.searchResults?.heroes || []); track $index) {
-    <div class="hero-detail">
-      <a routerLink="/detail/{{ hero.id }}">
-        <div class="badge">{{ hero.id }}</div>
-        <div class="name">
-          {{ hero.name }}
-        </div>
-        <button
-          type="button"
-          class="delete"
-          title="delete hero"
-          (click)="deleteButtonClicked($event, hero)"
-        >
-          x
-        </button>
-      </a>
-    </div>
+  Add hero
+</button>
+<hr />
+<h3>Hero Search</h3>
+<div class="control-group">
+  <label for="hero-search">Hero name: </label>
+  <input
+    class="control-group-input"
+    id="hero-search"
+    type="text"
+    [ngModel]="viewModel.searchTerm"
+    (ngModelChange)="heroesService.setSearchTerm($event)"
+  />
+</div>
+@if (viewModel.searchResults.totalResultCount || 0) {
+<div class="paging-container">
+  <div class="toggle-button-group">
+    Heroes per Page: @for (currentPageSize of heroesService.validPageSizes;
+    track $index) {
+    <button
+      [ngClass]="{
+        selected: viewModel.pageSize === currentPageSize
+      }"
+      (click)="heroesService.setPageSize(currentPageSize)"
+    >
+      {{ currentPageSize }}
+    </button>
     }
   </div>
-</ng-container>
-<!-- } -->
+  <div class="page-button-group">
+    <button
+      [disabled]="viewModel.disablePreviousPageButton"
+      (click)="heroesService.movePageNumber(-1)"
+    >
+      <
+    </button>
+    Page {{ (viewModel.pageNumber || 0) + 1 }} of
+    {{ viewModel.pageCount }}
+    <button
+      [disabled]="viewModel.disableNextPageButton"
+      (click)="heroesService.movePageNumber(1)"
+    >
+      >
+    </button>
+  </div>
+</div>
+}
+<div class="heroes-container">
+  @for (hero of (viewModel.searchResults.heroes || []); track $index) {
+  <div class="hero-detail">
+    <a routerLink="/detail/{{ hero.id }}">
+      <div class="badge">{{ hero.id }}</div>
+      <div class="name">
+        {{ hero.name }}
+      </div>
+      <button
+        type="button"
+        class="delete"
+        title="delete hero"
+        (click)="deleteButtonClicked($event, hero)"
+      >
+        x
+      </button>
+    </a>
+  </div>
+  }
+</div>
+}
