@@ -1,3 +1,4 @@
+@if(viewModel$ | async; as viewModel) {
 <h2>My Heroes</h2>
 <h3>Add Hero</h3>
 <div class="control-group">
@@ -42,31 +43,45 @@
     class="control-group-input"
     id="hero-search"
     type="text"
-    [(ngModel)]="searchTerm"
+    [ngModel]="viewModel.searchTerm"
+    (ngModelChange)="heroesService.setSearchTerm($event)"
   />
 </div>
-@if (searchResults && searchResults.length) {
+@if (viewModel.searchResults.totalResultCount || 0) {
 <div class="paging-container">
   <div class="toggle-button-group">
     Heroes per Page: @for (currentPageSize of heroesService.validPageSizes;
     track $index) {
     <button
-      [ngClass]="{ selected: pageSize === currentPageSize }"
-      (click)="pageSize = currentPageSize"
+      [ngClass]="{
+        selected: viewModel.pageSize === currentPageSize
+      }"
+      (click)="heroesService.setPageSize(currentPageSize)"
     >
       {{ currentPageSize }}
     </button>
     }
   </div>
   <div class="page-button-group">
-    <button (click)="movePageNumber(-1)"><</button>
-    Page {{ pageNumber + 1 }} of {{ pageCount }}
-    <button (click)="movePageNumber(+1)">></button>
+    <button
+      [disabled]="viewModel.disablePreviousPageButton"
+      (click)="heroesService.movePageNumber(-1)"
+    >
+      <
+    </button>
+    Page {{ (viewModel.pageNumber || 0) + 1 }} of
+    {{ viewModel.pageCount }}
+    <button
+      [disabled]="viewModel.disableNextPageButton"
+      (click)="heroesService.movePageNumber(1)"
+    >
+      >
+    </button>
   </div>
 </div>
 }
 <div class="heroes-container">
-  @for (hero of searchResults; track $index) {
+  @for (hero of (viewModel.searchResults.heroes || []); track $index) {
   <div class="hero-detail">
     <a routerLink="/detail/{{ hero.id }}">
       <div class="badge">{{ hero.id }}</div>
@@ -85,3 +100,4 @@
   </div>
   }
 </div>
+}

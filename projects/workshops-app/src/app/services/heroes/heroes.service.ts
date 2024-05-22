@@ -1,11 +1,21 @@
 import { AddHeroModel, HeroModel } from './hero.model';
 import {
+  BehaviorSubject,
+  Observable,
+  catchError,
+  combineLatest,
+  debounceTime,
+  map,
+  of,
+  shareReplay,
+  switchMap,
+  tap,
+} from 'rxjs';
+import {
   HttpClient,
   HttpErrorResponse,
   HttpHeaders,
 } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
-import { catchError, tap } from 'rxjs/operators';
 
 import { HeroSearchResultsModel } from './hero-search-results.model';
 import { Injectable } from '@angular/core';
@@ -14,17 +24,118 @@ import { heroSearchResultsPageSizeOptions } from './hero-search-results-page-siz
 
 @Injectable({ providedIn: 'root' })
 export class HeroesService {
+  public readonly pageCount$: Observable<number>;
+  public readonly pageSize$: Observable<number>;
+  public readonly pageNumber$: Observable<number>;
+  public readonly searchResults$: Observable<HeroSearchResultsModel>;
+  public readonly searchTerm$: Observable<string>;
   public readonly validPageSizes: readonly number[] =
     heroSearchResultsPageSizeOptions;
   private readonly heroesUrl: string = 'http://localhost:5000/api/heroes';
   private readonly httpOptions: { headers: HttpHeaders } = {
     headers: new HttpHeaders({ 'Content-Type': 'application/json' }),
   };
+  private readonly pageSizeBS: BehaviorSubject<number> = new BehaviorSubject(
+    this.validPageSizes[0]
+  );
+  private readonly pageNumberBS: BehaviorSubject<number> = new BehaviorSubject(
+    0
+  );
+  private readonly refreshSearchBS: BehaviorSubject<null> = new BehaviorSubject(
+    null
+  );
+  private readonly searchTermBS: BehaviorSubject<string> = new BehaviorSubject(
+    ''
+  );
 
   public constructor(
     private readonly httpClient: HttpClient,
     private readonly messageService: MessageService
-  ) {}
+  ) {
+    this.pageSize$ = this.pageSizeBS.pipe(
+      tap({ next: (): void => this.pageNumberBS.next(0) }),
+      shareReplay(1)
+    );
+    this.pageNumber$ = this.pageNumberBS.asObservable();
+    this.searchTerm$ = this.searchTermBS.pipe(
+      tap({ next: (): void => this.pageNumberBS.next(0) }),
+      shareReplay(1)
+    );
+
+    this.searchResults$ = combineLatest({
+      pageSize: this.pageSize$,
+      pageNumber: this.pageNumber$,
+      searchTerm: this.searchTerm$,
+      refreshSearch: this.refreshSearchBS,
+    }).pipe(
+      debounceTime(200),
+      switchMap(
+        ({
+          pageSize,
+          pageNumber,
+          searchTerm,
+        }: {
+          pageSize: number;
+          pageNumber: number;
+          searchTerm: string;
+          refreshSearch: null;
+        }): Observable<HeroSearchResultsModel> =>
+          !searchTerm
+            ? of({ heroes: [], totalResultCount: 0 })
+            : this.httpClient
+                .get<HeroSearchResultsModel>(this.heroesUrl, {
+                  params: {
+                    searchTerm,
+                    pageSize,
+                    pageNumber,
+                  },
+                })
+                .pipe(
+                  tap({
+                    next: (searchResults: HeroSearchResultsModel): void =>
+                      this.log(
+                        `found ${searchResults.totalResultCount} heroes matching "${searchTerm}"`
+                      ),
+                  }),
+                  catchError(
+                    (
+                      error: HttpErrorResponse
+                    ): Observable<HeroSearchResultsModel> =>
+                      this.handleErrorWithDefault(error, 'searchHeroes', {
+                        heroes: [],
+                        totalResultCount: 0,
+                      })
+                  )
+                )
+      ),
+      shareReplay(1)
+    );
+
+    this.pageCount$ = combineLatest({
+      searchResults: this.searchResults$,
+      pageSize: this.pageSize$,
+    }).pipe(
+      map(
+        ({
+          searchResults,
+          pageSize,
+        }: {
+          searchResults: HeroSearchResultsModel;
+          pageSize: number;
+        }): number => Math.ceil(searchResults.totalResultCount / pageSize)
+      ),
+      shareReplay(1)
+    );
+  }
+
+  public readonly setSearchTerm = (searchTerm: string): void =>
+    this.searchTermBS.next(searchTerm);
+
+  public readonly setPageSize = (pageSize: number): void =>
+    this.pageSizeBS.next(pageSize);
+
+  public readonly movePageNumber = (pages: number): void =>
+    this.pageNumberBS.next(this.pageNumberBS.value + pages);
 
   public readonly getTopHeroes = (count: number): Observable<HeroModel[]> =>
     this.httpClient
@@ -36,7 +147,8 @@ export class HeroesService {
         catchError(
           (error: HttpErrorResponse): Observable<HeroModel[]> =>
             this.handleErrorWithDefault(error, 'getTopHeroes', [])
-        )
+        ),
+        shareReplay(1)
       );
 
   public readonly resetTopHeroes = (count: number): Observable<HeroModel[]> =>
@@ -48,7 +160,8 @@ export class HeroesService {
         catchError(
           (error: HttpErrorResponse): Observable<HeroModel[]> =>
             this.handleErrorWithDefault(error, `resetTopHeroes`, [])
-        )
+        ),
+        shareReplay(1)
       );
 
   public readonly getHero = (id: number): Observable<HeroModel | undefined> =>
@@ -57,39 +170,9 @@ export class HeroesService {
       catchError(
         (error: HttpErrorResponse): Observable<undefined> =>
           this.handleError(error, `getHero id=${id}`)
-      )
+      ),
+      shareReplay(1)
     );
-
-  public readonly searchHeroes = (
-    searchTerm: string,
-    pageSize: number,
-    pageNumber: number
-  ): Observable<HeroSearchResultsModel> =>
-    !searchTerm.trim()
-      ? of({ heroes: [], totalResultCount: 0 })
-      : this.httpClient
-          .get<HeroSearchResultsModel>(this.heroesUrl, {
-            params: {
-              searchTerm,
-              pageSize,
-              pageNumber,
-            },
-          })
-          .pipe(
-            tap({
-              next: (searchResults: HeroSearchResultsModel): void =>
-                this.log(
-                  `found ${searchResults.totalResultCount} heroes matching "${searchTerm}"`
-                ),
-            }),
-            catchError(
-              (error: HttpErrorResponse): Observable<HeroSearchResultsModel> =>
-                this.handleErrorWithDefault(error, 'searchHeroes', {
-                  heroes: [],
-                  totalResultCount: 0,
-                })
-            )
-          );
 
   public readonly addHero = (
     hero: AddHeroModel
@@ -98,35 +181,50 @@ export class HeroesService {
       .post<HeroModel>(this.heroesUrl, hero, this.httpOptions)
       .pipe(
         tap({
-          next: (newHero: HeroModel): void =>
-            this.log(`added hero w/ id=${newHero.id}`),
+          next: (newHero: HeroModel): void => {
+            this.log(`added hero w/ id=${newHero.id}`);
+            this.refreshSearchBS.next(null);
+          },
         }),
         catchError(
           (error: HttpErrorResponse): Observable<undefined> =>
             this.handleError(error, 'addHero')
-        )
+        ),
+        shareReplay(1)
       );
 
-  public readonly deleteHero = (id: number): Observable<undefined> =>
+  public readonly deleteHero = (id: number): Observable<null | undefined> =>
     this.httpClient
-      .delete<undefined>(`${this.heroesUrl}/${id}`, this.httpOptions)
+      .delete<null>(`${this.heroesUrl}/${id}`, this.httpOptions)
       .pipe(
-        tap({ next: () => this.log(`deleted hero id=${id}`) }),
+        tap({
+          next: (): void => {
+            this.log(`deleted hero id=${id}`);
+            this.refreshSearchBS.next(null);
+          },
+        }),
         catchError(
           (error: HttpErrorResponse): Observable<undefined> =>
             this.handleError(error, 'deleteHero')
-        )
+        ),
+        shareReplay(1)
       );
 
   public readonly updateHero = (
     hero: HeroModel
   ): Observable<HeroModel | undefined> =>
     this.httpClient.put<HeroModel>(this.heroesUrl, hero, this.httpOptions).pipe(
-      tap({ next: () => this.log(`updated hero id=${hero.id}`) }),
+      tap({
+        next: (): void => {
+          this.log(`updated hero id=${hero.id}`);
+          this.refreshSearchBS.next(null);
+        },
+      }),
       catchError(
         (error: HttpErrorResponse): Observable<undefined> =>
           this.handleError(error, 'updateHero')
-      )
+      ),
+      shareReplay(1)
     );
 
   private readonly handleError = (
